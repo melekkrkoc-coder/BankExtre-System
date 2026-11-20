@@ -1,0 +1,313 @@
+﻿@page
+@model BankaExtreAnaliz.Pages.TransactionsModel
+@{
+    ViewData["Title"] = "Hesap Hareketleri";
+}
+
+<!-- Başlık Alanı -->
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Hesap Hareketleri</h4>
+    <p class="text-secondary small mb-0">Tüm banka hesaplarınızın hareketlerini tek ekranda görüntüleyin.</p>
+</div>
+
+<!-- Filtreleme Çubuğu -->
+<div class="app-card mb-4 p-3">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-3">
+            <select name="accountId" class="form-select form-select-sm">
+                <option value="">Tüm Bankalar & Hesaplar</option>
+                @foreach (var acc in Model.Accounts)
+                {
+                    <option value="@acc.Id" selected="@(Model.SelectedAccountId == acc.Id)">
+                        @acc.BankName - @acc.AccountName
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="categoryId" class="form-select form-select-sm">
+                <option value="">Tüm Kategoriler</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat.Id" selected="@(Model.SelectedCategoryId == cat.Id)">
+                        @cat.Name
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text border-end-0" style="background-color: var(--input-bg); border-color: var(--border-color);">
+                    <i class="bi bi-search text-secondary"></i>
+                </span>
+                <input type="text" name="searchTerm" class="form-control border-start-0" 
+                       placeholder="İşlem, kurum veya açıklama..." value="@Model.SearchTerm" />
+            </div>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary px-3 fw-medium">
+                <i class="bi bi-funnel me-1"></i> Filtrele
+            </button>
+            <a asp-page="./Transactions" class="btn btn-sm btn-outline-secondary" title="Sıfırla">✕</a>
+            <a href="javascript:void(0)" onclick="exportTransactionsCsv()" class="btn btn-sm btn-success fw-medium ms-auto">
+                <i class="bi bi-file-earmark-excel"></i> Excel'e Aktar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Hareketler Tablosu -->
+<div class="app-card mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary small border-bottom" style="border-color: var(--border-color) !important;">
+                    <th class="ps-3">Tarih</th>
+                    <th>Açıklama</th>
+                    <th>Kategori</th>
+                    <th class="text-end">Tutar</th>
+                    <th>Banka</th>
+                    <th>Hesap</th>
+                    <th class="text-end pe-3">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="small">
+                @if (Model.Transactions.Any())
+                {
+                    @foreach (var item in Model.Transactions)
+                    {
+                        <tr>
+                            <td class="ps-3 text-nowrap text-secondary">@item.TransactionDate.ToString("dd.MM.yyyy")</td>
+                            <td class="fw-medium">@item.Description</td>
+                            <td>
+                                <!-- Kategori Seçimi -->
+                                <select class="form-select form-select-sm py-1 px-2 fw-medium border rounded-pill"
+                                        style="max-width: 155px; font-size: 0.78rem; background-color: var(--input-bg); border-color: var(--border-color) !important;"
+                                        data-prev="@(item.CategoryId?.ToString() ?? "")"
+                                        onchange="openRuleModal(this, @item.Id, '@item.Description')">
+                                    <option value="" selected="@(item.CategoryId == null)">Kategorisiz</option>
+                                    @foreach (var cat in Model.Categories)
+                                    {
+                                        <option value="@cat.Id" selected="@(item.CategoryId == cat.Id)">
+                                            @cat.Name
+                                        </option>
+                                    }
+                                </select>
+                            </td>
+                            <td class="text-end fw-bold @(item.IsExpense ? "text-danger" : "text-success") text-nowrap">
+                                @(item.IsExpense ? "- " : "+ ")@item.Amount.ToString("C2")
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border" style="border-color: var(--border-color) !important;">
+                                    @(item.Account?.BankName ?? "-")
+                                </span>
+                            </td>
+                            <td class="text-secondary">@(item.Account?.AccountName ?? "-")</td>
+                            <td class="text-end pe-3">
+                                <!-- Silme Butonu -->
+                                <button type="button" class="btn btn-sm text-danger border-0 p-1" 
+                                        onclick="openDeleteModal(@item.Id, '@item.Description.Replace("'", "\\'")')" 
+                                        title="İşlemi Sil">
+                                    <i class="bi bi-trash fs-6"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-secondary py-5">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                            Kayıtlı hesap hareketi bulunamadı.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Sayfalama -->
+    <div class="d-flex justify-content-center align-items-center gap-1 mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
+        <button class="btn btn-sm btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-left"></i></button>
+        <button class="btn btn-sm btn-primary px-3 py-1 fw-medium">1</button>
+        <button class="btn btn-sm btn-outline-secondary px-3 py-1">2</button>
+        <button class="btn btn-sm btn-outline-secondary px-3 py-1">3</button>
+        <button class="btn btn-sm btn-outline-secondary px-3 py-1">4</button>
+        <button class="btn btn-sm btn-outline-secondary px-3 py-1">5</button>
+        <button class="btn btn-sm btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-right"></i></button>
+    </div>
+</div>
+
+<!-- Akıllı Kural Onay Modalı -->
+<div class="modal fade" id="smartRuleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content app-card border-0 shadow-lg p-2">
+            <div class="modal-body text-center p-4">
+                <div class="rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 58px; height: 58px; background-color: rgba(59, 130, 246, 0.12);">
+                    <i class="bi bi-magic text-primary fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Otomatik Kural Oluşturulsun mu?</h5>
+                <p class="text-secondary small mb-3">
+                    Bu işlem güncellendi. Bundan sonraki benzer harcamalar da otomatik bu kategoriye atansın mı?
+                </p>
+
+                <div class="p-2 rounded border text-start mb-3" style="background-color: var(--input-bg); border-color: var(--border-color) !important;">
+                    <label class="text-secondary small fw-medium d-block mb-1" style="font-size: 0.72rem;">EŞLEŞECEK ANAHTAR KELİME</label>
+                    <input type="text" id="ruleKeywordInput" class="form-control form-control-sm border-0 bg-transparent fw-bold text-primary p-0" />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-2" onclick="confirmCategoryChange(false)">
+                        Yalnızca Bu İşlem
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary w-50 py-2 fw-medium" onclick="confirmCategoryChange(true)">
+                        <i class="bi bi-check2"></i> Kuralı Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Silme Onay Modalı -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content app-card border-0 shadow-lg p-3">
+            <div class="modal-body text-center p-3">
+                <div class="rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 58px; height: 58px; background-color: rgba(239, 68, 68, 0.12);">
+                    <i class="bi bi-exclamation-triangle text-danger fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">İşlemi Sil</h5>
+                <p class="text-secondary small mb-3">
+                    Bu hesap hareketini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                </p>
+                <div class="p-2 rounded border text-start mb-3" style="background-color: var(--input-bg); border-color: var(--border-color) !important;">
+                    <small class="text-secondary d-block" style="font-size: 0.72rem;">İŞLEM AÇIKLAMASI</small>
+                    <span id="deleteItemDescription" class="fw-medium small text-truncate d-block"></span>
+                </div>
+
+                <form method="post" asp-page-handler="DeleteTransaction" id="deleteItemForm">
+                    <input type="hidden" name="id" id="deleteItemId" value="" />
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-2" data-bs-dismiss="modal">
+                            Vazgeç
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-danger w-50 py-2 fw-medium">
+                            <i class="bi bi-trash me-1"></i> Evet, Sil
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        let currentSelectElement = null;
+        let currentTransactionId = null;
+        let currentCategoryId = null;
+        let smartRuleModalInstance = null;
+        let deleteModalInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ruleModalEl = document.getElementById('smartRuleModal');
+            if (ruleModalEl) {
+                smartRuleModalInstance = new bootstrap.Modal(ruleModalEl);
+                ruleModalEl.addEventListener('hidden.bs.modal', function () {
+                    if (currentSelectElement && !currentSelectElement.dataset.confirmed) {
+                        currentSelectElement.value = currentSelectElement.dataset.prev || "";
+                    }
+                });
+            }
+
+            const deleteModalEl = document.getElementById('deleteConfirmModal');
+            if (deleteModalEl) {
+                deleteModalInstance = new bootstrap.Modal(deleteModalEl);
+            }
+        });
+
+        // Kategori Değiştirme ve Kural Modalı
+        function openRuleModal(selectElement, transactionId, description) {
+            currentSelectElement = selectElement;
+            currentTransactionId = transactionId;
+            currentCategoryId = selectElement.value;
+            delete currentSelectElement.dataset.confirmed;
+
+            if (!currentCategoryId) {
+                confirmCategoryChange(false);
+                return;
+            }
+
+            const defaultKeyword = (description || '').trim().split(' ')[0] || '';
+            document.getElementById('ruleKeywordInput').value = defaultKeyword;
+
+            smartRuleModalInstance.show();
+        }
+
+        async function confirmCategoryChange(createRule) {
+            if (currentSelectElement) {
+                currentSelectElement.dataset.confirmed = "true";
+            }
+            if (smartRuleModalInstance) {
+                smartRuleModalInstance.hide();
+            }
+
+            const keyword = document.getElementById('ruleKeywordInput').value;
+            const formData = new FormData();
+            formData.append('transactionId', currentTransactionId);
+            formData.append('categoryId', currentCategoryId);
+            formData.append('createRule', createRule);
+            if (createRule) {
+                formData.append('customKeyword', keyword);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            try {
+                const response = await fetch('?handler=UpdateCategory', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    if (currentSelectElement) {
+                        currentSelectElement.dataset.prev = currentCategoryId;
+                        currentSelectElement.classList.add('border-success');
+                        setTimeout(() => currentSelectElement.classList.remove('border-success'), 1500);
+                    }
+                } else {
+                    alert('Kategori güncellenirken bir hata oluştu.');
+                    if (currentSelectElement) {
+                        currentSelectElement.value = currentSelectElement.dataset.prev || "";
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                if (currentSelectElement) {
+                    currentSelectElement.value = currentSelectElement.dataset.prev || "";
+                }
+            }
+        }
+
+        // Silme Onay Modalı Açıcı
+        function openDeleteModal(id, description) {
+            if (!deleteModalInstance) {
+                deleteModalInstance = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            }
+            document.getElementById('deleteItemId').value = id;
+            document.getElementById('deleteItemDescription').innerText = description;
+            deleteModalInstance.show();
+        }
+
+        function exportTransactionsCsv() {
+            window.location.href = '/Index?handler=ExportExpenses';
+        }
+    </script>
+}

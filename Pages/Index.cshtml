@@ -1,0 +1,277 @@
+﻿@page
+@model BankaExtreAnaliz.Pages.IndexModel
+@{
+    ViewData["Title"] = "Ana Sayfa";
+    var totalExpense = Model.DashboardData.TotalExpense;
+    var colors = new[] { "#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#64748b" };
+}
+
+<!-- Üst Filtre ve Karşılama Alanı -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3" style="border-color: var(--border-color) !important;">
+    <div>
+        <h4 class="fw-bold mb-1">Hoş geldin! 👋</h4>
+        <p class="text-secondary small mb-0">Finansal durumunu buradan kolayca takip edebilirsin.</p>
+    </div>
+
+    <!-- Filtre Formu -->
+    <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+        <select id="filterAccountId" name="accountId" class="form-select form-select-sm" style="width: 190px;">
+            <option value="">Tüm Hesaplarım</option>
+            @foreach (var item in Model.AccountList)
+            {
+                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+            }
+        </select>
+
+        <input id="filterStartDate" type="date" name="startDate" class="form-control form-control-sm" 
+               value="@(Model.DashboardData.StartDate?.ToString("yyyy-MM-dd"))" style="width: 140px;" />
+        <input id="filterEndDate" type="date" name="endDate" class="form-control form-control-sm" 
+               value="@(Model.DashboardData.EndDate?.ToString("yyyy-MM-dd"))" style="width: 140px;" />
+
+        <button type="submit" class="btn btn-sm btn-primary px-3 fw-medium">Filtrele</button>
+        <a asp-page="./Index" class="btn btn-sm btn-outline-secondary" title="Sıfırla">✕</a>
+    </form>
+</div>
+
+<!-- 3'lü Özet İstatistik Kartları -->
+<div class="row g-3 mb-4">
+    <!-- Toplam Gelir -->
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Toplam Gelir</span>
+                <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-2 py-1 small">
+                    <i class="bi bi-arrow-up-right"></i> Gelir
+                </span>
+            </div>
+            <h3 class="fw-bold mb-0">@Model.DashboardData.TotalIncome.ToString("C2")</h3>
+        </div>
+    </div>
+
+    <!-- Toplam Gider -->
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Toplam Gider</span>
+                <span class="badge bg-danger bg-opacity-25 text-danger rounded-pill px-2 py-1 small">
+                    <i class="bi bi-arrow-down-right"></i> Gider
+                </span>
+            </div>
+            <h3 class="fw-bold mb-0">@Model.DashboardData.TotalExpense.ToString("C2")</h3>
+        </div>
+    </div>
+
+    <!-- Net Durum -->
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Net Bakiye Durumu</span>
+                <span class="badge bg-primary bg-opacity-25 text-primary rounded-pill px-2 py-1 small">
+                    <i class="bi bi-wallet"></i> Kalan
+                </span>
+            </div>
+            <h3 class="fw-bold @(Model.DashboardData.NetBalance >= 0 ? "text-primary" : "text-danger") mb-0">
+                @Model.DashboardData.NetBalance.ToString("C2")
+            </h3>
+        </div>
+    </div>
+</div>
+
+<!-- Orta Alan: Halka Grafik + En Çok Harcanan Yerler -->
+<div class="row g-4 mb-4">
+    <!-- Harcama Dağılımı (Donut Grafik & Yüzde Listesi) -->
+    <div class="col-lg-7">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Harcama Dağılımı</h6>
+                <small class="text-secondary">Kategoriye tıklayarak detayları açın</small>
+            </div>
+            <div class="row align-items-center">
+                <!-- Halka Grafik Canvas -->
+                <div class="col-sm-5 d-flex justify-content-center">
+                    <canvas id="categoryChart" width="220" height="220"></canvas>
+                </div>
+
+                <!-- Kategori ve Yüzde Listesi -->
+                <div class="col-sm-7">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-sm align-middle mb-0">
+                            <tbody>
+                                @for (int i = 0; i < Model.DashboardData.CategoryExpenses.Count; i++)
+                                {
+                                    var item = Model.DashboardData.CategoryExpenses[i];
+                                    var color = colors[i % colors.Length];
+                                    var percent = totalExpense > 0 ? (item.TotalAmount / totalExpense) * 100 : 0;
+                                    <tr style="cursor: pointer;" onclick="loadCategoryDetails('@item.CategoryName')">
+                                        <td style="width: 12px;">
+                                            <span class="d-inline-block rounded-circle" style="width: 10px; height: 10px; background-color: @color;"></span>
+                                        </td>
+                                        <td class="fw-medium small text-truncate" style="max-width: 110px;">@item.CategoryName</td>
+                                        <td class="text-secondary small text-end">@percent.ToString("F1")%</td>
+                                        <td class="fw-semibold small text-end">@item.TotalAmount.ToString("C2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- En Çok Harcama Yapılan Yerler -->
+    <div class="col-lg-5">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">En Çok Harcama Yapılan Yerler</h6>
+                <span class="badge border text-secondary" style="border-color: var(--border-color) !important;">İlk 5</span>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                @if (Model.DashboardData.TopPlaces != null && Model.DashboardData.TopPlaces.Any())
+                {
+                    foreach (var place in Model.DashboardData.TopPlaces)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                                <div class="rounded-circle p-2 text-primary d-flex align-items-center justify-content-center" 
+                                     style="width: 34px; height: 34px; background-color: var(--input-bg);">
+                                    <i class="bi bi-shop fs-6"></i>
+                                </div>
+                                <span class="fw-medium small text-truncate">@place.PlaceName</span>
+                            </div>
+                            <span class="fw-bold text-danger small">@place.TotalAmount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-secondary small py-4">Kayıtlı harcama bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alt Alan: Son İşlemler Tablosu -->
+<div class="app-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Son İşlemler</h6>
+        <a asp-page="/Transactions" class="small text-primary text-decoration-none fw-medium">Tümünü Gör →</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary small border-bottom" style="border-color: var(--border-color) !important;">
+                    <th>Tarih</th>
+                    <th>Açıklama</th>
+                    <th>Kategori</th>
+                    <th class="text-end">Tutar</th>
+                </tr>
+            </thead>
+            <tbody class="small">
+                @if (Model.DashboardData.RecentTransactions != null && Model.DashboardData.RecentTransactions.Any())
+                {
+                    foreach (var t in Model.DashboardData.RecentTransactions)
+                    {
+                        <tr>
+                            <td class="text-secondary">@t.Date.ToString("dd.MM.yyyy")</td>
+                            <td class="fw-medium">@t.Description</td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border" style="border-color: var(--border-color) !important;">
+                                    @t.CategoryName
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold @(t.IsExpense ? "text-danger" : "text-success")">
+                                @(t.IsExpense ? "-" : "+")@t.Amount.ToString("C2")
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary py-3">Henüz işlem bulunmuyor.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Tıklanan Kategorinin Harcama Detayları (Açılır Panel) -->
+<div id="categoryDetailsSection" class="app-card mb-4" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold text-primary mb-0" id="selectedCategoryTitle">Kategori Detayları</h6>
+        <button type="button" class="btn-close" onclick="closeDetails()"></button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary small border-bottom" style="border-color: var(--border-color) !important;">
+                    <th class="ps-3">Tarih</th>
+                    <th>Hesap</th>
+                    <th>Açıklama</th>
+                    <th class="text-end pe-3">Tutar</th>
+                </tr>
+            </thead>
+            <tbody id="categoryDetailsBody" class="small">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/chart.js"></script>
+    <script>
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DashboardData.CategoryExpenses.Select(x => x.CategoryName)));
+        const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DashboardData.CategoryExpenses.Select(x => (double)x.TotalAmount)));
+        const colors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'];
+        
+        // HTML entity encode olmasını önleyen temiz TL değeri:
+        const totalExpenseFormatted = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DashboardData.TotalExpense.ToString("C2")));
+
+        // Donut Grafiği Çizdir
+        drawDonutChart('categoryChart', labels, data, colors, totalExpenseFormatted);
+
+        // Kategori Detaylarını Getiren AJAX Fonksiyonu
+        async function loadCategoryDetails(categoryName) {
+            const accountId = document.getElementById('filterAccountId').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            let url = `?handler=CategoryDetails&categoryName=${encodeURIComponent(categoryName)}`;
+            if (accountId) url += `&accountId=${accountId}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+
+            const response = await fetch(url);
+            const items = await response.json();
+
+            const tbody = document.getElementById('categoryDetailsBody');
+            tbody.innerHTML = '';
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary py-3">Bu kategoriye ait işlem bulunamadı.</td></tr>';
+            } else {
+                items.forEach(t => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="ps-3 text-secondary">${t.date}</td>
+                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">${t.account}</span></td>
+                            <td>${t.description}</td>
+                            <td class="text-end pe-3 fw-bold text-danger">${t.amount}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('selectedCategoryTitle').innerText = `${categoryName} Harcamaları (${items.length} İşlem)`;
+            document.getElementById('categoryDetailsSection').style.display = 'block';
+            document.getElementById('categoryDetailsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeDetails() {
+            document.getElementById('categoryDetailsSection').style.display = 'none';
+        }
+    </script>
+}

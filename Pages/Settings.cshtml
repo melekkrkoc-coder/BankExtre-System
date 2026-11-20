@@ -1,0 +1,87 @@
+﻿@page
+@model BankaExtreAnaliz.Pages.SettingsModel
+@{
+    ViewData["Title"] = "Ayarlar";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold mb-1">Ayarlar</h4>
+    <p class="text-secondary small mb-0">Uygulama tercihlerinizi yönetin ve sistem verilerini kontrol edin.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-sliders me-2 text-primary"></i>Genel Tercihler</h6>
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-medium">Para Birimi</label>
+                <input type="text" class="form-control form-control-sm" value="Türk Lirası (₺ - TRY)" disabled />
+            </div>
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-medium">Tarih Formatı</label>
+                <input type="text" class="form-control form-control-sm" value="GG.AA.YYYY" disabled />
+            </div>
+            <div class="pt-2 border-top" style="border-color: var(--border-color) !important;">
+                <label class="form-label small text-secondary fw-medium d-block">Veritabanı Konumu</label>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                    <i class="bi bi-shield-check me-1"></i> Yerel SQLite (Offline)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-database me-2 text-primary"></i>Kayıt Durumu</h6>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                <span class="small text-secondary">Toplam Hesap Sayısı</span>
+                <span class="fw-bold small">@Model.TotalAccountsCount</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                <span class="small text-secondary">Kayıtlı Kategori Sayısı</span>
+                <span class="fw-bold small">@Model.TotalCategoriesCount</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                <span class="small text-secondary">Akıllı Eşleşme Kuralı</span>
+                <span class="fw-bold small">@Model.TotalRulesCount</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+                <span class="small text-secondary">Toplam Hareket Kaydı</span>
+                <span class="fw-bold small text-primary">@Model.TotalTransactionsCount</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-card border border-danger border-opacity-25">
+    <h6 class="fw-bold text-danger mb-1"><i class="bi bi-exclamation-octagon me-2"></i>Veri Yönetimi</h6>
+    <p class="text-secondary small mb-3">Yanlış yüklenen ekstreleri veya test kayıtlarını toplu temizleyebilirsiniz.</p>
+    <div class="d-flex flex-wrap gap-2">
+        <form method="post" asp-page-handler="ClearTransactions" onsubmit="return confirm('DİKKAT: Tüm hesap hareketleri silinecektir. Emin misiniz?');">
+            <button type="submit" class="btn btn-sm btn-outline-danger fw-medium">
+                <i class="bi bi-trash me-1"></i> Tüm Hareketleri Sil
+            </button>
+        </form>
+        <form method="post" asp-page-handler="ClearRules" onsubmit="return confirm('Kategori eşleşme kuralları sıfırlansın mı?');">
+            <button type="submit" class="btn btn-sm btn-outline-secondary fw-medium">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Kuralları Sıfırla
+            </button>
+        </form>
+    </div>
+</div>

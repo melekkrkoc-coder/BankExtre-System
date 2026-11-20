@@ -1,0 +1,276 @@
+﻿@page
+@model BankaExtreAnaliz.Pages.ReportsModel
+@{
+    ViewData["Title"] = "Raporlar";
+    var colors = new[] { "#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#64748b" };
+}
+
+<!-- Başlık Alanı ve Sağ Araçlar -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1">Raporlar</h4>
+        <p class="text-secondary small mb-0">Gelir, gider ve kategori analizlerinizle finansal durumunuzu detaylıca inceleyin.</p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+        <span class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-calendar3"></i> Son 3 Ay
+        </span>
+        <a asp-page-handler="ExportPdf" class="btn btn-sm btn-primary px-3 fw-medium">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Raporu İndir (PDF)
+        </a>
+    </div>
+</div>
+
+<!-- 3'lü Özet Kartlar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Toplam Gelir</span>
+                <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-2 py-1 small">
+                    <i class="bi bi-arrow-up-right"></i> Gelir
+                </span>
+            </div>
+            <h3 class="fw-bold mb-0">@Model.TotalIncome.ToString("C2")</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Toplam Gider</span>
+                <span class="badge bg-danger bg-opacity-25 text-danger rounded-pill px-2 py-1 small">
+                    <i class="bi bi-arrow-down-right"></i> Gider
+                </span>
+            </div>
+            <h3 class="fw-bold mb-0">@Model.TotalExpense.ToString("C2")</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold small">Net Durum</span>
+                <span class="badge bg-primary bg-opacity-25 text-primary rounded-pill px-2 py-1 small">
+                    <i class="bi bi-wallet"></i> Kalan
+                </span>
+            </div>
+            <h3 class="fw-bold @(Model.NetBalance >= 0 ? "text-primary" : "text-danger") mb-0">
+                @Model.NetBalance.ToString("C2")
+            </h3>
+        </div>
+    </div>
+</div>
+
+<!-- Orta Satır: Kategori Dağılımı ve En Çok Harcama Yapılan Yerler -->
+<div class="row g-4 mb-4">
+    <!-- Kategori Dağılımı -->
+    <div class="col-lg-7">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3">Kategori Dağılımı</h6>
+            <div class="row align-items-center">
+                <div class="col-sm-5 d-flex justify-content-center">
+                    <canvas id="reportsCategoryChart" width="210" height="210"></canvas>
+                </div>
+                <div class="col-sm-7">
+                    <table class="table table-borderless table-sm align-middle mb-0">
+                        <tbody>
+                            @for (int i = 0; i < Model.CategoryExpenses.Count; i++)
+                            {
+                                var item = Model.CategoryExpenses[i];
+                                var color = colors[i % colors.Length];
+                                <tr>
+                                    <td style="width: 12px;">
+                                        <span class="d-inline-block rounded-circle" style="width: 10px; height: 10px; background-color: @color;"></span>
+                                    </td>
+                                    <td class="fw-medium small text-truncate" style="max-width: 110px;">@item.CategoryName</td>
+                                    <td class="text-secondary small text-end">@item.Percentage.ToString("F1")%</td>
+                                    <td class="fw-semibold small text-end">@item.TotalAmount.ToString("C2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- En Çok Harcama Yapılan Yerler -->
+    <div class="col-lg-5">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3">En Çok Harcama Yapılan Yerler</h6>
+            <div class="d-flex flex-column gap-2">
+                @if (Model.TopPlaces.Any())
+                {
+                    foreach (var place in Model.TopPlaces)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                            <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                                <div class="rounded-circle p-2 text-primary d-flex align-items-center justify-content-center" 
+                                     style="width: 34px; height: 34px; background-color: var(--input-bg);">
+                                    <i class="bi bi-shop fs-6"></i>
+                                </div>
+                                <span class="fw-medium small text-truncate">@place.PlaceName</span>
+                            </div>
+                            <span class="fw-bold text-danger small">@place.TotalAmount.ToString("C2")</span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-secondary small py-4">Kayıt bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alt Satır: Aylık Trend ve Banka Dağılımı -->
+<div class="row g-4 mb-4">
+    <!-- Dinamik Aylık Trend Grafiği -->
+    <div class="col-lg-7">
+        <div class="app-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Aylık Trend</h6>
+                <div class="d-flex align-items-center gap-3 small text-secondary">
+                    <span><i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i> Gelir</span>
+                    <span><i class="bi bi-circle-fill text-primary" style="font-size: 0.6rem;"></i> Gider</span>
+                </div>
+            </div>
+
+            <div style="position: relative; width: 100%; height: 230px;">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banka Bazında Dağılım -->
+    <div class="col-lg-5">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3">Banka Bazında Dağılım</h6>
+            <div class="d-flex flex-column gap-3">
+                @if (Model.BankDistribution.Any())
+                {
+                    foreach (var bank in Model.BankDistribution)
+                    {
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center small mb-1">
+                                <span class="fw-medium"><i class="bi bi-bank me-1 text-primary"></i> @bank.BankName</span>
+                                <span class="text-secondary fw-semibold">@bank.TotalAmount.ToString("C2") <small>(@bank.Percentage.ToString("F0")%)</small></span>
+                            </div>
+                            <div class="progress" style="height: 6px; background-color: var(--input-bg);">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: @(bank.Percentage)%;"></div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-secondary small py-4">Banka dağılım verisi bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/chart.js"></script>
+    <script>
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CategoryExpenses.Select(x => x.CategoryName)));
+        const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CategoryExpenses.Select(x => (double)x.TotalAmount)));
+        const colors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'];
+        const totalExpenseFormatted = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TotalExpense.ToString("C2")));
+
+        if (document.getElementById('reportsCategoryChart')) {
+            drawDonutChart('reportsCategoryChart', labels, data, colors, totalExpenseFormatted);
+        }
+
+        const trendMonths = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrends.Select(x => x.MonthName)));
+        const trendIncomes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrends.Select(x => (double)x.Income)));
+        const trendExpenses = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrends.Select(x => (double)x.Expense)));
+
+        function drawMonthlyTrend(canvasId, labels, incomes, expenses) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = 230 * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = 230;
+            const padding = { top: 25, right: 30, bottom: 35, left: 55 };
+
+            ctx.clearRect(0, 0, width, height);
+
+            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+            const maxVal = Math.max(...incomes, ...expenses, 1000) * 1.15;
+
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (i / 4) * (height - padding.top - padding.bottom);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                const val = (maxVal * (1 - i / 4));
+                ctx.fillStyle = textColor;
+                ctx.font = '10px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('₺' + Math.round(val).toLocaleString('tr-TR'), padding.left - 8, y);
+            }
+
+            const stepX = (width - padding.left - padding.right) / Math.max(labels.length, 1);
+
+            function drawPath(dataArr, strokeColor) {
+                if (dataArr.length === 0) return;
+
+                ctx.beginPath();
+                dataArr.forEach((val, i) => {
+                    const x = padding.left + i * stepX + stepX / 2;
+                    const y = height - padding.bottom - (val / maxVal) * (height - padding.top - padding.bottom);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                dataArr.forEach((val, i) => {
+                    const x = padding.left + i * stepX + stepX / 2;
+                    const y = height - padding.bottom - (val / maxVal) * (height - padding.top - padding.bottom);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = strokeColor;
+                    ctx.fill();
+                    ctx.strokeStyle = isDark ? '#1e293b' : '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                });
+            }
+
+            drawPath(trendIncomes, '#10b981');
+            drawPath(trendExpenses, '#3b82f6');
+
+            labels.forEach((label, i) => {
+                const x = padding.left + i * stepX + stepX / 2;
+                ctx.fillStyle = textColor;
+                ctx.font = '11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, x, height - 12);
+            });
+        }
+
+        drawMonthlyTrend('monthlyTrendChart', trendMonths, trendIncomes, trendExpenses);
+        window.addEventListener('resize', () => drawMonthlyTrend('monthlyTrendChart', trendMonths, trendIncomes, trendExpenses));
+    </script>
+}

@@ -1,0 +1,203 @@
+﻿@page
+@model BankaExtreAnaliz.Pages.CategoriesModel
+@{
+    ViewData["Title"] = "Kategori ve Kurallar";
+}
+
+<!-- Başlık ve Üst Buton -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1">Kategori ve Kurallar</h4>
+        <p class="text-secondary small mb-0">Harcama kategorilerini düzenleyebilir, kendi kurallarınızı oluşturabilirsiniz.</p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm px-3 fw-medium" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+        <i class="bi bi-plus-lg me-1"></i> Yeni Kategori
+    </button>
+</div>
+
+<!-- Sekmeler (Tab Seçiciler) -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <div class="form-check form-check-inline m-0">
+        <input class="form-check-input" type="radio" name="pageTab" id="tabCategoriesRadio" checked onchange="switchTab('categories')">
+        <label class="form-check-label small fw-semibold" for="tabCategoriesRadio" id="lblCategories">Kategoriler</label>
+    </div>
+    <div class="form-check form-check-inline m-0">
+        <input class="form-check-input" type="radio" name="pageTab" id="tabRulesRadio" onchange="switchTab('rules')">
+        <label class="form-check-label small fw-semibold text-secondary" for="tabRulesRadio" id="lblRules">Kurallar</label>
+    </div>
+</div>
+
+<!-- BÖLÜM 1: KATEGORİLER SEKMESİ -->
+<div id="sectionCategories" class="row g-4">
+    <!-- Standart Kategoriler -->
+    <div class="col-lg-6">
+        <div class="app-card h-100">
+            <h6 class="fw-bold mb-3">Standart Kategoriler</h6>
+            <div class="d-flex flex-column gap-2">
+                @if (Model.DefaultCategories.Any())
+                {
+                    foreach (var cat in Model.DefaultCategories)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-2 px-1 border-bottom" style="border-color: var(--border-color) !important;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #f59e0b;"></span>
+                                <span class="small fw-medium">@cat.Name</span>
+                            </div>
+                            <span class="text-secondary small">(@cat.Transactions.Count)</span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-secondary small py-3">Standart kategori bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Kendi Kategorilerin -->
+    <div class="col-lg-6">
+        <div class="app-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-3">Kendi Kategorilerin</h6>
+                <div class="d-flex flex-column gap-2">
+                    @if (Model.CustomCategories.Any())
+                    {
+                        foreach (var cat in Model.CustomCategories)
+                        {
+                            <div class="d-flex justify-content-between align-items-center py-2 px-1 border-bottom" style="border-color: var(--border-color) !important;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #3b82f6;"></span>
+                                    <span class="small fw-medium">@cat.Name</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-secondary small">(@cat.Transactions.Count)</span>
+                                    <form method="post" asp-page-handler="DeleteCategory" asp-route-id="@cat.Id" class="m-0">
+                                        <button type="submit" class="btn btn-sm text-danger p-0 border-0" title="Sil" onclick="return confirm('Bu kategoriyi silmek istediğinize emin misiniz?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-secondary small py-4">Henüz özel kategori eklenmedi.</div>
+                    }
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none p-0 mt-3 d-inline-flex align-items-center gap-1 fw-medium" 
+                    data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+                <i class="bi bi-plus-circle"></i> Yeni Kategori Oluştur
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- BÖLÜM 2: KURALLAR SEKMESİ (Varsayılan olarak gizli) -->
+<div id="sectionRules" class="row g-4" style="display: none;">
+    <div class="col-lg-8 mx-auto">
+        <div class="app-card">
+            <h6 class="fw-bold mb-1">Anahtar Kelime Eşleştirme</h6>
+            <p class="text-secondary small mb-3">Belirli kelimeler otomatik olarak ilgili kategorilere atanır.</p>
+
+            <!-- Yeni Kural Ekleme Formu -->
+            <form method="post" asp-page-handler="CreateRule" class="mb-4">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" name="Keyword" class="form-control form-control-sm" placeholder="Örn: Migros, Shell, Netflix" required />
+                    </div>
+                    <div class="col-md-5">
+                        <select name="CategoryId" class="form-select form-select-sm" required>
+                            <option value="">Hedef Kategori</option>
+                            @foreach (var cat in Model.AllCategories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-medium">Ekle</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Mevcut Kurallar Listesi -->
+            <div class="d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto;">
+                @if (Model.Rules.Any())
+                {
+                    foreach (var rule in Model.Rules)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-2 px-3 rounded border" 
+                             style="background-color: var(--input-bg); border-color: var(--border-color) !important;">
+                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                <i class="bi bi-tag text-secondary"></i>
+                                <span class="fw-bold small text-truncate">@rule.Keyword</span>
+                                <i class="bi bi-arrow-right text-secondary small"></i>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border" style="border-color: var(--border-color) !important;">
+                                    @(rule.Category?.Name ?? "Kategorisiz")
+                                </span>
+                            </div>
+                            <form method="post" asp-page-handler="DeleteRule" asp-route-id="@rule.Id" class="m-0">
+                                <button type="submit" class="btn btn-sm text-danger p-0 border-0" title="Kuralı Sil" onclick="return confirm('Bu kuralı silmek istediğinize emin misiniz?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-secondary small py-4">Kayıtlı eşleştirme kuralı bulunmuyor.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yeni Kategori Modalı -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content app-card border-0 shadow-lg p-2">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">Yeni Kategori Ekle</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CreateCategory">
+                <div class="modal-body py-3">
+                    <label class="form-label small text-secondary fw-medium">Kategori Adı</label>
+                    <input type="text" name="CategoryName" class="form-control form-control-sm" placeholder="Örn: Yatırım, Eğlence, Sağlık" required />
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-medium px-3">Oluştur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function switchTab(tab) {
+            const secCategories = document.getElementById('sectionCategories');
+            const secRules = document.getElementById('sectionRules');
+            const lblCategories = document.getElementById('lblCategories');
+            const lblRules = document.getElementById('lblRules');
+
+            if (tab === 'categories') {
+                secCategories.style.display = 'flex';
+                secRules.style.display = 'none';
+                lblCategories.classList.remove('text-secondary');
+                lblRules.classList.add('text-secondary');
+            } else {
+                secCategories.style.display = 'none';
+                secRules.style.display = 'flex';
+                lblRules.classList.remove('text-secondary');
+                lblCategories.classList.add('text-secondary');
+            }
+        }
+    </script>
+}

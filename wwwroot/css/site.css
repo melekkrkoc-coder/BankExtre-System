@@ -1,0 +1,152 @@
+/* --- Tema Renk Değişkenleri --- */
+:root {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --sidebar-active-bg: #2563eb;
+    --sidebar-active-text: #ffffff;
+    --topbar-bg: #ffffff;
+    --input-bg: #f1f5f9;
+    --table-hover: #f8fafc;
+}
+
+[data-bs-theme="dark"] {
+    --bg-main: #0b1329 !important;
+    --bg-card: #131f37 !important;
+    --text-primary: #f8fafc !important;
+    --text-secondary: #94a3b8 !important;
+    --border-color: #1e2d4a !important;
+    --sidebar-bg: #080d1a !important;
+    --sidebar-text: #64748b !important;
+    --sidebar-active-bg: #2563eb !important;
+    --sidebar-active-text: #ffffff !important;
+    --topbar-bg: #131f37 !important;
+    --input-bg: #0b1329 !important;
+    --table-hover: #182744 !important;
+}
+
+/* Gövde ve Genel Yazı */
+body {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary) !important;
+    overflow-x: hidden;
+    margin: 0;
+}
+
+/* Bootstrap Card ve Arka Planlarını Temaya Zorlama */
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .card {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-bs-theme="dark"] .text-dark,
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6 {
+    color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Tablolar ve Form Elemanları */
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: var(--table-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Sidebar ve Topbar */
+.app-sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.25rem 1rem;
+    flex-shrink: 0;
+}
+
+    .app-sidebar .nav-link {
+        color: var(--sidebar-text);
+        padding: 0.65rem 0.9rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.35rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .app-sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .app-sidebar .nav-link.active {
+            background-color: var(--sidebar-active-bg);
+            color: var(--sidebar-active-text);
+        }
+
+.app-topbar {
+    background-color: var(--topbar-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.85rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.topbar-search {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.45rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 360px;
+}
+
+    .topbar-search input {
+        border: none;
+        background: transparent;
+        outline: none;
+        color: var(--text-primary);
+        width: 100%;
+        font-size: 0.875rem;
+    }
+
+.app-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1.25rem;
+}
