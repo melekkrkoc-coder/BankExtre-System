@@ -150,3 +150,11 @@ body {
     border-radius: 14px;
     padding: 1.25rem;
 }
+
+
+/* Public portfolio demo: keep all write controls unavailable. */
+.public-demo main form[method="post"],
+.public-demo main select[onchange],
+.public-demo main button[onclick] {
+    display: none !important;
+}
