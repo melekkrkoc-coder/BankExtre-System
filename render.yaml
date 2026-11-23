@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: bankextre-system-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: PUBLIC_DEMO
+        value: "true"
